@@ -36,7 +36,26 @@ bash <(curl -fsSL https://get.hy2.sh/)
 Замени `ТВО_ДОМЕН`, `ТВО_EMAIL`, `ИМЯ` и `ПАРОЛЬ`:
 
 ```bash
-printf 'listen: 0.0.0.0:443\n\nacme:\n  type: http\n  domains:\n    - ТВО_ДОМЕН\n  email: ТВО_EMAIL\n\nauth:\n  type: userpass\n  userpass:\n    ИМЯ: ПАРОЛЬ\n\nmasquerade:\n  type: proxy\n  proxy:\n    url: https://www.bing.com\n    rewriteHost: true\n' > /etc/hysteria/config.yaml
+cat > /etc/hysteria/config.yaml <<'EOF'
+listen: 0.0.0.0:443
+
+acme:
+  type: http
+  domains:
+    - ТВОЙ_ДОМЕН
+  email: ТВОЙ_EMAIL
+
+auth:
+  type: userpass
+  userpass:
+    ИМЯ: ПАРОЛЬ
+
+masquerade:
+  type: proxy
+  proxy:
+    url: https://www.bing.com
+    rewriteHost: true
+EOF
 ```
 
 Hysteria2 сам получит SSL-сертификат через Let's Encrypt при первом запуске.
@@ -117,24 +136,48 @@ systemctl enable warp-svc
 **2. Обновить конфиг Hysteria2:**
 
 ```bash
-printf 'listen: 0.0.0.0:443\n\nacme:\n  type: http\n  domains:\n    - ТВО_ДОМЕН\n  email: ТВО_EMAIL\n\nauth:\n  type: userpass\n  userpass:\n    ИМЯ: ПАРОЛЬ\n\noutbounds:\n  - name: warp\n    type: socks5\n    socks5:\n      addr: 127.0.0.1:40000\n\nmasquerade:\n  type: proxy\n  proxy:\n    url: https://www.bing.com\n    rewriteHost: true\n' > /etc/hysteria/config.yaml
+cat > /etc/hysteria/config.yaml <<'EOF'
+listen: 0.0.0.0:443
+
+acme:
+  type: http
+  domains:
+    - ТВО_ДОМЕН
+  email: ТВО_EMAIL
+
+auth:
+  type: userpass
+  userpass:
+    ИМЯ: ПАРОЛЬ
+
+outbounds:
+  - name: warp
+    type: socks5
+    socks5:
+      addr: 127.0.0.1:40000
+
+masquerade:
+  type: proxy
+  proxy:
+    url: https://www.bing.com
+    rewriteHost: true
+EOF
 ```
 
 **3. Настроить запуск после WARP:**
 
+Создай override-файл для hysteria-server:
+
 ```bash
-systemctl edit hysteria-server
-```
-
-Вставить:
-
-```ini
+mkdir -p /etc/systemd/system/hysteria-server.service.d
+cat > /etc/systemd/system/hysteria-server.service.d/override.conf <<'EOF'
 [Unit]
 After=warp-svc.service
 Requires=warp-svc.service
+EOF
 ```
 
-Сохранить (`Ctrl+X` → `Y` → `Enter`):
+Применить изменения:
 
 ```bash
 systemctl daemon-reload
